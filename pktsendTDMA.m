@@ -1,4 +1,4 @@
-function [ pl,ps,outcome,CHN_sta_f,Succ_TX_flag] = pktsendTDMA( CHNbefore_leng,CHNafter_leng,CHN_sta_ini,slotNO,Pu,Pd)
+function [ pl,ps,outcome,CHN_sta_f,Succ_TX_flag,channelslt] = pktsendTDMA( CHNbefore_leng,CHNafter_leng,CHN_sta_ini,slotNO,Pu,Pd,channelslt)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %input:
 %CHNbefore_leng : the former slots length.
@@ -18,6 +18,9 @@ function [ pl,ps,outcome,CHN_sta_f,Succ_TX_flag] = pktsendTDMA( CHNbefore_leng,C
 %Succ_TX_time： record the time when node send pkt successfully after thie superframe
 %*******与pktsend的区别是多返回一个平均成功发包间隔Interval_avg***********
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% channel state lasting time
+global statelast
+%%
 ps = 0;
 pl = 0;
 Succ_TX_flag = zeros(1,slotNO);
@@ -27,20 +30,24 @@ CHN_sta = CHN_sta_ini; % CHN_sta is a temperal variable updating every loop
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % the channel state before current transmission，使用马尔科夫链来计算当前信道状态
 
-for c = 1:CHNbefore_leng 
+for c = 1:floor( (channelslt + CHNbefore_leng)/statelast ) 
         if CHN_sta == 1
             CHN_sta = randsrc(1,1,[0 1;Pd 1-Pd]); %%%%%% channel model
         else
             CHN_sta = randsrc(1,1,[0 1;1-Pu Pu]); %%%%%% using Markov chain
         end
 end
+channelslt = mod(channelslt + CHNbefore_leng, statelast);
 % transmitting  slotNO packets
 for d = 1:slotNO  % each node i transmit slotNO slots
+    if floor( (channelslt + slotNO)/statelast ) > 0
         if CHN_sta == 1
             CHN_sta = randsrc(1,1,[0 1;Pd 1-Pd]); %%%%%% channel model
         else
             CHN_sta = randsrc(1,1,[0 1;1-Pu Pu]); %%%%%% using Markov chain
         end
+        channelslt = mod(channelslt + slotNO, statelast);
+    end
         if CHN_sta == 0
             pl = pl+1; %%%%% calculate the NO. of lossed packets
         else
