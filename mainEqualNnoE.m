@@ -185,4 +185,4 @@ for indE = 1:length(NL)%   多种优先级情况下
       disp(['indE NumUP: ',num2str([indE N])]) 
 end
 disp('saturation VaringN simulation done!')
-save('VarN_MAC(UP0-6,NH1-1-9)(P1_x0.9)(NL1-1-9)no.mat');
+save('VarN_MAC(UP0-6,NH1-1-9)(P1_x0.9)(NL1-1-9)(Pgb0.4)(Pbg0.4)no.mat');
