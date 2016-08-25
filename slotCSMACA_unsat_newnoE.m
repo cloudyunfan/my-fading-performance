@@ -29,7 +29,7 @@ function [ReTX_time,backoff_after,CSMA_sta,pl_t,ps_t,PL_colli,TX_time] = slotCSM
 % parameters initialization 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-global Data_rate Pkt_len Tslot Pbg Pgb CWmin CWmax UP UPnode E_TX E_CCA channelslot%isMAP isRAP 
+global Data_rate Pkt_len Tslot Pbg Pgb CWmin CWmax UP UPnode E_TX E_CCA channelslot statelast%isMAP isRAP 
 %yf probability of arrive one unit energy in each slot
 global P1_x
 %-----------²ÎÊý---------------------------------------------------------
@@ -256,13 +256,14 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % tic
  for n=1:N
-    for g=1:(floor (rap_length) - floor (last_TX_time(n)))
+    for g=1:floor( (channelslot(n) + floor (rap_length) - floor (last_TX_time(n)))/statelast )
         if last_CHN_sta(n) == 1
             last_CHN_sta(n) = randsrc(1,1,[0 1;Pgb(n) 1-Pgb(n)]); %%%%%% channel model
         else
             last_CHN_sta(n) = randsrc(1,1,[0 1;1-Pbg(n) Pbg(n)]); %%%%%% using Markov chain
         end
     end
+    channelslot(n) = mod( (channelslot(n) + floor (rap_length) - floor (last_TX_time(n)) ), statelast);
       %yf
       %last_CHN_sta(n) = 1;
 end % end if
