@@ -34,7 +34,7 @@ global Data_rate Pkt_len Tslot Pbg Pgb CWmin CWmax UP UPnode E_TX E_CCA channels
 global P1_x
 %-----------参数---------------------------------------------------------
 %yf
-P1_x = 0.9;
+P1_x = 0.6;
 SIFS = 0.5;      %最短帧间间隔0 yf 有点问题，一会儿改0.5
 T_pkt = ceil( Pkt_len/(Data_rate*Tslot) );  %time to send a packet and receive ACK,unit slot
 M = 4;        %最大重传次数
@@ -209,7 +209,7 @@ while ( t<=rap_length )
             CHNb_leng = t + 1 - last_TX_time(ind_TX); %计算从上一次发送数据包到现在的时间
             % TX one packet, the channel state when the pkt is finished is
             % recorded and used  3.last slot state of current node 4.the last state after the superframe.
-            [ PL_cap,PS_cap,last_CHN_sta(ind_TX), no_use(ind_TX)] = pktsend( CHNb_leng,0,last_CHN_sta(ind_TX),1,Pbg(ind_TX),Pgb(ind_TX)); 
+            [ PL_cap,PS_cap,last_CHN_sta(ind_TX), no_use(ind_TX), channelslot(ind_TX)] = pktsend( CHNb_leng,0,last_CHN_sta(ind_TX),1,Pbg(ind_TX),Pgb(ind_TX), channelslot(ind_TX)); 
 %             disp(['node ',num2str(ind_TX),' send Pkt ',num2str(PS_cap),' successfully!']);
            
             %%--------------------修改仿真变量------------------------
@@ -234,8 +234,6 @@ while ( t<=rap_length )
    % EH_sp(t,:) = e_flow;
     %yf更新时隙
     t = t + 1;
-    %yf更新信道状态持续时间
-    channelslot = channelslot + 1;
     %yf更新first
  %   if isFirst == 1
  %   isFirst = 0;
@@ -257,7 +255,6 @@ end
 % each node
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % tic
-if channelslot >= 10
  for n=1:N
     for g=1:(floor (rap_length) - floor (last_TX_time(n)))
         if last_CHN_sta(n) == 1
@@ -268,8 +265,6 @@ if channelslot >= 10
     end
       %yf
       %last_CHN_sta(n) = 1;
- end
-channelslot = 0;
 end % end if
 % t5 = toc
     

@@ -1,4 +1,4 @@
-function [ pl,ps,outcome,CHN_sta_f ] = pktsend( CHNbefore_leng,CHNafter_leng,CHN_sta_ini,slotNO,Pu,Pd )
+function [ pl,ps,outcome,CHN_sta_f,channelslt ] = pktsend( CHNbefore_leng,CHNafter_leng,CHN_sta_ini,slotNO,Pu,Pd, channelslt )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %input:
 %CHNbefore_leng is the former slots length.
@@ -15,7 +15,7 @@ function [ pl,ps,outcome,CHN_sta_f ] = pktsend( CHNbefore_leng,CHNafter_leng,CHN
 %CHN_sta_f is the last state after the superframe.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% channel state lasting time
-global channelslot
+global statelast
 %%
 ps = 0;
 pl = 0;
@@ -25,21 +25,23 @@ CHN_sta = CHN_sta_ini; % CHN_sta is a temperal variable updating every loop
 % channel state is updating
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % the channel state before current transmission，使用马尔科夫链来计算当前信道状态
-for c = 1:CHNbefore_leng 
+for c = 1:( (channelslt + CHNbefore_leng)/statelast )
         if CHN_sta == 1
             CHN_sta = randsrc(1,1,[0 1;Pd 1-Pd]); %%%%%% channel model
         else
             CHN_sta = randsrc(1,1,[0 1;1-Pu Pu]); %%%%%% using Markov chain
         end
 end
+channelslt = mod(channelslt + CHNbefore_leng, statelast);
 % transmitting  slotNO packets
 for d = 1:slotNO  % each node i transmit slotNO slots
-        if channelslot + 1 == 10
+        if floor( (channelslt + slotNO)/statelast ) > 0
             if CHN_sta == 1
                 CHN_sta = randsrc(1,1,[0 1;Pd 1-Pd]); %%%%%% channel model
             else
                 CHN_sta = randsrc(1,1,[0 1;1-Pu Pu]); %%%%%% using Markov chain
             end
+            channelslt = mod(channelslt + slotNO, statelast);
         end
         if CHN_sta == 0
             pl = pl+1; %%%%% calculate the NO. of lossed packets

@@ -9,7 +9,7 @@ clc
 %yf energy threshold,energy for transmission and CCA
 global E_th
 global N Tslot Data_rate TB Pbg Pgb CW CWmin CWmax UP UPnode Pkt_len E_TX E_CCA Tsim %isMAP lambdaE Emax Bmax isRAP
-global channelslot
+global channelslot statelast
 %% 载入MDP结果
 % load MDP_result(UP0-6,NH4)(Em20-Bm20,B0.05-E0.05)(NL3-3-18).mat %*******************************%
 %------------802.15.6相关的全局参数---------
@@ -28,7 +28,8 @@ E_CCA = E_th;   %信道检测消耗的能量,发送、接受、侦听比例1:1:1%******************
 E_TX = E_th;       %发送数据包需要的能量
 
 TB = 2000; %len_TDMA + len_RAP
-channelslot = 0;
+
+statelast = 10;
 act = 2;
 %yf omit the MAP
 M = 0;   %MAP中询问的时隙块数 M = 7;
@@ -60,7 +61,7 @@ for indE = 1:length(NL)%   多种优先级情况下
     %-----信道模型使用马尔科夫链对信道状态建模，设置信道状态转移概率---------
     Pbg = 0.4*ones(1,N);
     Pgb = 0.4*ones(1,N);   %如此为理想信道条件，信道恒定为GOOD不变
-    
+    channelslot = zeros(1, N);
     %------------------初始化电池和数据缓存区----------------
     E_buff = (E_th)*ones(1,N); % 初始化各节点能量状态为0 yf改为够传的能量    
      %----------------仿真变量-----------------------------
