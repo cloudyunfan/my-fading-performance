@@ -27,12 +27,12 @@ E_th = 3;
 E_CCA = E_th;   %信道检测消耗的能量,发送、接受、侦听比例1:1:1%*******************************%
 E_TX = E_th;       %发送数据包需要的能量
 
-TB = 200; %len_TDMA + len_RAP
+TB = 2000; %len_TDMA + len_RAP
 statelast = 10;
 act = 2;
 %yf omit the MAP
-M = 7;   %MAP中询问的时隙块数 M = 7;
-T_block = 10;  %MAP中每一个块的时隙数
+M = 25;   %MAP中询问的时隙块数 M = 7;
+T_block = 25;  %MAP中每一个块的时隙数
 len_MAP = M*T_block;  %MAP的长度%*******************************%
 len_RAP = TB-len_MAP; %RAP阶段固定有100个时隙%*******************************%
 UPH = 6;
@@ -161,8 +161,8 @@ for indE = 1:length(NL)%   多种优先级情况下
         Ulit_rate(up,indE) = mean( Slot_ulti(indUP) ); %平均信道利用率
 %         Pktloss = PL_t./(PL_t+PS_t);
         Pktloss_rate(up,indE) = mean( sum( PL_RAP_sp(:,indUP)+PL_MAP_sp(:,indUP) )./sum( PS_RAP_sp(:,indUP)+PS_MAP_sp(:,indUP) ) );   %将属于同一优先级的节点(RAP + MAP)的平均丢包率保存起来        
-        Pktloss_rate_RAP(up,indE) = mean( sum( PL_RAP_sp(:,indUP) )./sum( PS_RAP_sp(:,indUP) ) ) ;   %将属于同一优先级的节点RAP的平均丢包率保存起来
-        Pktloss_rate_MAP(up,indE) = mean( sum( PL_MAP_sp(:,indUP) )./sum( PS_MAP_sp(:,indUP) ) ) ;   %将属于同一优先级的节点的平均丢包率保存起来
+        Pktloss_rate_RAP(up,indE) = mean( sum( PL_RAP_sp(:,indUP) )./sum( PS_RAP_sp(:,indUP) + PL_RAP_sp(:,indUP) ) ) ;   %将属于同一优先级的节点RAP的平均丢包率保存起来
+        Pktloss_rate_MAP(up,indE) = mean( sum( PL_MAP_sp(:,indUP) )./sum( PS_MAP_sp(:,indUP) + PL_MAP_sp(:,indUP) ) ) ;   %将属于同一优先级的节点的平均丢包率保存起来
                                                            
     end
 %       %-----------------统计整个WBAN的结果---------------------------   
