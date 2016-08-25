@@ -116,7 +116,7 @@ for indE = 1:length(NL)%   多种优先级情况下
             CHNafter_leng = 0;
             CHNbefore_leng = start + TDMA_sift - last_TX_time(ind_node_poll);
             last_TX_time_MAP = last_TX_time(n) - CHNbefore_leng - TDMA_sift;
-            [PL_td,PS_td,lastout(ind_node_poll),TDMA_CHN_Sta(ind_node_poll),Succ_TX_time_td,ELE_MAP] = pktsendTDMA_unsat( CHNbefore_leng,CHNafter_leng,TDMA_CHN_Sta((ind_node_poll)),T_block,Pbg((ind_node_poll)),Pgb((ind_node_poll)));
+            [PL_td,PS_td,lastout(ind_node_poll),TDMA_CHN_Sta(ind_node_poll),Succ_TX_time_td,channelslot(ind_node_poll)] = pktsendTDMA( CHNbefore_leng,CHNafter_leng,TDMA_CHN_Sta((ind_node_poll)),T_block,Pbg((ind_node_poll)),Pgb((ind_node_poll)),channelslot(ind_node_poll));
             if(~isempty(Succ_TX_time_td))
                 %recover the real index                        
                 ind_TX_MAP = Succ_TX_time_td + start + TDMA_sift;
