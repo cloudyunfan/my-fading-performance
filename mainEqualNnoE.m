@@ -27,12 +27,11 @@ E_th = 3;
 E_CCA = E_th;   %信道检测消耗的能量,发送、接受、侦听比例1:1:1%*******************************%
 E_TX = E_th;       %发送数据包需要的能量
 
-TB = 2000; %len_TDMA + len_RAP
-
+TB = 200; %len_TDMA + len_RAP
 statelast = 10;
 act = 2;
 %yf omit the MAP
-M = 0;   %MAP中询问的时隙块数 M = 7;
+M = 7;   %MAP中询问的时隙块数 M = 7;
 T_block = 10;  %MAP中每一个块的时隙数
 len_MAP = M*T_block;  %MAP的长度%*******************************%
 len_RAP = TB-len_MAP; %RAP阶段固定有100个时隙%*******************************%
@@ -66,6 +65,7 @@ for indE = 1:length(NL)%   多种优先级情况下
     E_buff = (E_th)*ones(1,N); % 初始化各节点能量状态为0 yf改为够传的能量    
      %----------------仿真变量-----------------------------
     RAP_CHN_Sta = ones(1,N); % initial channel assumed to be GOOD. temperal variable to record every INITIAL state in a superframe
+    TDMA_CHN_Sta = ones(1,N);    % initial channel assumed to be GOOD
     last_TX_time = ones(1,N); 
     CSMA_Sta_Pre = zeros(1,N);   % initial CSMA state assumed to be all 0 (0:initialization;1:backoff counter;2:sending packets)
     Def_Time_Pre = (-1)*ones(1,N); % initial deferred time -1
@@ -75,29 +75,18 @@ for indE = 1:length(NL)%   多种优先级情况下
 
     %--------------一需要统计的结果-------------------------------
     PL_RAP_sp = zeros(Tsim,N);  %丢包数
+    PL_MAP_sp = zeros(Tsim,N);    
     Colli_RAP_sp = zeros(Tsim,N);
-    PS_RAP_sp = zeros(Tsim,N);   %成功传输的包数           
-%*******************************%
-%能量状态可以不考虑
-%*******************************%
-%     B_of_sp = zeros(Tsim,N);%记录溢出的能量
-%     B_sp = zeros(Tsim,N);
-%     EH_of_sp = zeros(Tsim,N);%记录溢出的能量
-    %EH_sp = zeros(Tsim,N);
-%     %历史状态记录
-% %     hist_Act = zeros(Tsim,N);
-%yf     hist_E = zeros(Tsim,N);
-%     hist_B = zeros(Tsim,N);
-%     hist_MAP = zeros(Tsim,M); %*******************************%
-%     actTime_sp = zeros(Tsim,1); %*******************************%
+    PS_RAP_sp = zeros(Tsim,N);   %成功传输的包数
+    PS_MAP_sp = zeros(Tsim,N);
     
     Swait = waitbar(0,'仿真进度');   %设置进度条
-    last_TX_time_RAP = last_TX_time;
+    %last_TX_time_RAP = last_TX_time;
     for j = 1: Tsim
         %--------------------RAP阶段使用时隙CSMA/CA时隙分配方式,所有节点参与这个阶段------
-        last_TX_time_RAP_ini = ones(1,N);
+        last_TX_time_RAP = last_TX_time-(j-1)*TB;
 %         tic
-        [ReTX_time_pre,Def_Time_Pre,CSMA_Sta_Pre,PL_RAP,PS_RAP,Colli_RAP,Succ_TX_time_RAP] = slotCSMACA_unsat_newnoE(len_RAP,CSMA_Sta_Pre,Def_Time_Pre,RAP_CHN_Sta,ReTX_time_pre,CW,last_TX_time_RAP_ini,E_buff);%ELE_RAP,（倒数第四）,E_buff,E_flow（最后两个）等一下改 CW可以全局传过去
+        [ReTX_time_pre,Def_Time_Pre,CSMA_Sta_Pre,PL_RAP,PS_RAP,Colli_RAP,Succ_TX_time_RAP] = slotCSMACA_unsat_newnoE(len_RAP,CSMA_Sta_Pre,Def_Time_Pre,RAP_CHN_Sta,ReTX_time_pre,CW,last_TX_time_RAP,E_buff);%ELE_RAP,（倒数第四）,E_buff,E_flow（最后两个）等一下改 CW可以全局传过去
 %         toc
         
         PL_RAP_sp(j,:) = PL_RAP;
@@ -108,26 +97,39 @@ for indE = 1:length(NL)%   多种优先级情况下
             %更新最近一次成功发包的时间
             if( ~isempty(Succ_TX_time_RAP{n}) )
                 %更新成功发包时间记录
-                ind_TX_RAP = Succ_TX_time_RAP{n} + (j-1)*TB;  %racover the real index
+                ind_TX_RAP = Succ_TX_time_RAP{n} + (j-1)*TB;  %recover the real index
                 last_TX_time(n) =  ind_TX_RAP(end);
                 Succ_TX_time(ind_TX_RAP,n) = 1;
-                last_TX_time_RAP(n) = last_TX_time(n)-(j-1)*TB;
+                %last_TX_time_RAP(n) = last_TX_time(n)-(j-1)*TB;
             end  
         end
         
-        %**************************************************************%
-        %   不在超帧更新能量，改在每个超帧的时隙更新能量
-        %   yf
-        %**************************************************************%
-           %-------------更新普通节点的能量buffer------------------
-%         [E_overflow,B_overflow,E_flow,b_flow,E_buff,B_buff] = buff_update(TB,E_buff,B_buff);
-%         B_of_sp(j,:) = B_overflow;
-%         B_sp(j,:) = b_flow;  
-%         EH_of_sp(j,:) = E_overflow;
-       % EH_sp(j,:) = E_flow;  %yf 一会儿更改，将e_flow和E_buff放到slotCSMACA_unsat_new 长度从Tsim变成了rap_length
-% yf        hist_E(j,:) = E_buff;
-%         hist_B(j,:) = B_buff;
-        
+        %--------------MAP 阶段，使用TDMA方式分配时隙--------------;               
+         start = (j-1)*TB + len_RAP + 1; 
+         TDMA_sift = 0;   %偏移量  
+         indMAP = find(ones(1,N)==1); %所有节点都参与MAP
+         indPoll = getPollNode(indMAP,M);  %确定将被poll的节点
+         %hist_MAP(j,1:length(indPoll))=indPoll;
+         for poll =1:length(indPoll)   %遍历所有高优先级节点的决策行为     
+             ind_node_poll = indPoll(poll); %取下标
+            %----------scheduled slots---------------
+            CHNafter_leng = 0;
+            CHNbefore_leng = start + TDMA_sift - last_TX_time(ind_node_poll);
+            last_TX_time_MAP = last_TX_time(n) - CHNbefore_leng - TDMA_sift;
+            [PL_td,PS_td,lastout(ind_node_poll),TDMA_CHN_Sta(ind_node_poll),Succ_TX_time_td,ELE_MAP] = pktsendTDMA_unsat( CHNbefore_leng,CHNafter_leng,TDMA_CHN_Sta((ind_node_poll)),T_block,Pbg((ind_node_poll)),Pgb((ind_node_poll)));
+            if(~isempty(Succ_TX_time_td))
+                %recover the real index                        
+                ind_TX_MAP = Succ_TX_time_td + start + TDMA_sift;
+                last_TX_time(ind_node_poll) = ind_TX_MAP(end);
+                Succ_TX_time(ind_TX_MAP,ind_node_poll) = 1;
+            end
+           %---------------------更新统计变量------------------------
+            TDMA_sift = TDMA_sift + T_block; %根据每个节点分配到的时隙数增加偏移量                    
+            %ELE_MAP_sp(j,ind_node_poll) = ELE_MAP_sp(j,ind_node_poll) + ELE_MAP;  %消耗的能量增加 
+            PL_MAP_sp(j,ind_node_poll) = PL_td;
+            PS_MAP_sp(j,ind_node_poll) = PS_td;                                              
+         end 
+         
         %--------------进度显示-------------------------------
          str = ['仿真完成', num2str(j*100/Tsim), '%'];     
          waitbar(j/Tsim,Swait,str);
@@ -147,16 +149,20 @@ for indE = 1:length(NL)%   多种优先级情况下
     for up=1:length(UPclass)
         indUP = find(UPnode==UPclass(up));
         
-       % EH_total(up,indE) = mean( sum( EH_sp(:,indUP) ) );  %总采集到的能量      
+        %EH_total(up,indE) = mean( sum( EH_sp(:,indUP) ) );  %总采集到的能量      
         %ELE_RAP_t(up,indE) = mean( sum( ELE_RAP_sp(:,indUP) ) );
         PS_RAP_total(up,indE) = mean( sum( PS_RAP_sp(:,indUP) ) );      %总的RAP阶段发送的超帧数，取所有节点的平均数   
+        PS_MAP_total(up,indE) = mean( sum( PS_MAP_sp(:,indUP) ) );
         PL_RAP_total(up,indE) = mean( sum( PL_RAP_sp(:,indUP) ) );      %总的RAP阶段发送的超帧数，取所有节点的平均数   
-      
+        PL_MAP_total(up,indE) = mean( sum( PL_MAP_sp(:,indUP) ) );
+        
         Colli_t(up,indE) = mean( sum( Colli_RAP_sp(:,indUP) ) );  %总冲突数，取所有节点的平均数                
         Interval_avg(up,indE) = mean( Intv(indUP) );  %平均成功发包间隔 ,去各节点的平均数
         Ulit_rate(up,indE) = mean( Slot_ulti(indUP) ); %平均信道利用率
 %         Pktloss = PL_t./(PL_t+PS_t);
-        Pktloss_rate(up,indE) = mean( sum( PL_RAP_sp(:,indUP) )./sum( PS_RAP_sp(:,indUP) ) ) ;   %将属于同一优先级的节点的平均丢包率保存起来        
+        Pktloss_rate(up,indE) = mean( sum( PL_RAP_sp(:,indUP)+PL_MAP_sp(:,indUP) )./sum( PS_RAP_sp(:,indUP)+PS_MAP_sp(:,indUP) ) );   %将属于同一优先级的节点(RAP + MAP)的平均丢包率保存起来        
+        Pktloss_rate_RAP(up,indE) = mean( sum( PL_RAP_sp(:,indUP) )./sum( PS_RAP_sp(:,indUP) ) ) ;   %将属于同一优先级的节点RAP的平均丢包率保存起来
+        Pktloss_rate_MAP(up,indE) = mean( sum( PL_MAP_sp(:,indUP) )./sum( PS_MAP_sp(:,indUP) ) ) ;   %将属于同一优先级的节点的平均丢包率保存起来
                                                            
     end
 %       %-----------------统计整个WBAN的结果---------------------------   
@@ -172,10 +178,11 @@ for indE = 1:length(NL)%   多种优先级情况下
         %yf
         PS_WBAN(indE) = sum( sum(PS_RAP_sp) )/N;       
         Colli_WBAN(indE) = sum( sum(Colli_RAP_sp) )/N;
-        Pktloss_WBAN(indE) = sum(sum( PL_RAP_sp ))/sum(sum( PS_RAP_sp ));
+        Pktloss_WBAN(indE) = sum(sum( PL_RAP_sp+PL_MAP_sp ))/sum(sum( PS_RAP_sp+PS_MAP_sp ));
+        Pktloss_WBAN_RAP(indE) = sum(sum( PL_RAP_sp ))/sum(sum( PS_RAP_sp ));
+        Pktloss_WBAN_RAP(indE) = sum(sum( PL_MAP_sp ))/sum(sum( PS_MAP_sp ));
 %     disp(['indE NumUP lambdaE: ',num2str([indE N lambdaE])]) ; % yf 一会儿更改，去掉lambdaE
       disp(['indE NumUP: ',num2str([indE N])]) 
 end
-disp('unsaturation VaringN simulation done!')
-% save('new_MDP_VarN_MDDMAC(UP0-6,NH4)(Em20-Bm20,B0.05-E0.05)(NL3-3-18).mat');
+disp('saturation VaringN simulation done!')
 save('VarN_MAC(UP0-6,NH1-1-9)(P1_x0.9)(NL1-1-9)no.mat');
