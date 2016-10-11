@@ -19,7 +19,7 @@ CWmax = [64,32,32,16,16,8,8,4];
 
 %----------------------设置参数-----------------------------------------------------
 Tsim = 200; %NO. of superframes simulated
-Tslot = 10;  % slot length (ms)
+Tslot = 1;  % slot length (ms)
 Pkt_len = 512; %packet length, unit is bit
 Data_rate = 51.2; % transmission rate (kilo bits per second)
 % yf initialize energy
@@ -27,7 +27,7 @@ E_th = 3;
 E_CCA = E_th;   %信道检测消耗的能量,发送、接受、侦听比例1:1:1%*******************************%
 E_TX = E_th;       %发送数据包需要的能量
 
-TB = 2000; %len_TDMA + len_RAP
+TB = 2000; %len_TDMA + len_RAP <=255
 statelast = 10;
 act = 2;
 %yf omit the MAP
